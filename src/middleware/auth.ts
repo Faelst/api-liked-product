@@ -2,9 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 
 export default function auth(req: Request, res: Response, next: NextFunction) {
-    if (process.env.API_MODE == "DEV")
-        return next()
-
+    
     const authHeader = req.headers.authorization
 
     if (!authHeader)

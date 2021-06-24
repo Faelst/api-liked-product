@@ -19,4 +19,4 @@ export var UserSchema: Schema = new Schema({
     }
 });
 
-export default model<UserModelInterface>("User", UserSchema);
+export default model<UserModelInterface>("Users", UserSchema);

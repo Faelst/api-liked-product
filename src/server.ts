@@ -2,29 +2,41 @@ import express, { Request, Response } from 'express';
 import bycrypt from 'bcrypt';
 import jwt from 'jsonwebtoken'
 import dontenv from 'dotenv'
+import cors from 'cors'
+import bodyParser from 'body-parser'
 
-import { User } from './interfaces/User';
+import { ProductModel } from './models/Prodocts';
 import UserSchema from './models/user'
 import auth from './middleware/auth';
+import { connect } from './database';
+import { User } from './interfaces/User';
 
-dontenv.config()
 const app = express()
+app.use(cors())
+app.use(express.json())
+dontenv.config()
+connect()
 
-app.get('/', (req: Request, res: Response) => {
+app.get('/', async (req: Request, res: Response) => {
     return res.status(200).send("API Running")
 })
 
-app.post('/login', async (req: Request, res: Response) => {
+app.get('/Products', async (req: Request, res: Response) => {
+    const products = await ProductModel.find()
+    return res.status(200).send({ products })
+})
 
+app.post('/login', async (req: Request, res: Response) => {
     const { username, password } = req.body
 
     const user: User = await UserSchema.findOne({ username }).select('+password')
 
-    if(!user)
-        return res.status(400).send({ status: false, data: 'Usuario nao localizado'})
+    if (!user)
+        return res.status(400).send({ status: false, data: 'Usuario nao localizado' })
 
-    if(!await bycrypt.compare(password, user.password))
-        return res.status(400).send({ status: false , data: 'Login incorreto'})
+    // if (!await bycrypt.compare(password, user.password))
+    if (!(password == user.password)) // Como a senha nao esta sendo criptografada, a verificação esta comparando somente os textos
+        return res.status(400).send({ status: false, data: 'Login incorreto' })
 
     delete user.password
 
@@ -36,6 +48,7 @@ app.post('/login', async (req: Request, res: Response) => {
 })
 
 app.post('/favoriteProduct', auth, async (req: Request, res: Response) => {
+    console.log(req.body)
     res.status(200).json("favoritando produto")
 })
 
