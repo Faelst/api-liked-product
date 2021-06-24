@@ -6,10 +6,11 @@ import cors from 'cors'
 import bodyParser from 'body-parser'
 
 import { ProductModel } from './models/Prodocts';
-import UserSchema from './models/user'
+import UserSchema from './models/User'
 import auth from './middleware/auth';
 import { connect } from './database';
 import { User } from './interfaces/User';
+import { FavoritesProducts } from './models/Favorites';
 
 const app = express()
 app.use(cors())
@@ -19,11 +20,6 @@ connect()
 
 app.get('/', async (req: Request, res: Response) => {
     return res.status(200).send("API Running")
-})
-
-app.get('/Products', async (req: Request, res: Response) => {
-    const products = await ProductModel.find()
-    return res.status(200).send({ products })
 })
 
 app.post('/login', async (req: Request, res: Response) => {
@@ -47,9 +43,45 @@ app.post('/login', async (req: Request, res: Response) => {
     res.send({ user, token })
 })
 
+app.get('/Products', async (req: Request, res: Response) => {
+    const {userId}: any = req.query
+    let products: any = await ProductModel.find()
+    const favorites: any = await FavoritesProducts.findOne({ userId })
+
+    products = products.map((element, index, array) => {
+        array[index].isFavorited = favorites.products.includes(element['_id'])
+        return array[index]
+    });
+
+    return res.status(200).send({ products })
+})
+
 app.post('/favoriteProduct', auth, async (req: Request, res: Response) => {
-    console.log(req.body)
-    res.status(200).json("favoritando produto")
+    const { productId, userId, isFavorited } = req.body
+
+    const favorites = await FavoritesProducts.findOne({ userId: userId })
+
+    if (!favorites) {
+        await FavoritesProducts.create({
+            userId: userId,
+            products: [productId]
+        })
+        return res.status(200).json("favoritando produto")
+    }
+
+    if (isFavorited) {
+        await FavoritesProducts.updateOne(
+            { userId: userId },
+            { $push: { products: productId } }
+        )
+        return res.status(200).json("favoritando produto")
+    }
+
+    await FavoritesProducts.updateOne(
+        { userId: userId },
+        { $pullAll: { products: [productId] } }
+    )
+    return res.status(200).json("Produto removido dos favoritos")
 })
 
 app.listen(8080, () => console.log('API listen on http://localhost:8080'))

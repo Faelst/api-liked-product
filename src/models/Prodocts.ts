@@ -18,6 +18,9 @@ export const ProductSchema: Schema = new Schema({
     price: {
         type: Number,
         require: true
+    },
+    isFavorited: {
+        type: Boolean
     }
 })
 
